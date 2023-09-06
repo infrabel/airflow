@@ -568,6 +568,8 @@ class TaskInstance(Base, LoggingMixin):
         # can be changed when calling 'run'
         self.test_mode = False
 
+        self._orm_deserialize_xcom: bool = False
+
     @property
     def stats_tags(self) -> dict[str, str]:
         return prune_dict({"dag_id": self.dag_id, "task_id": self.task_id})
@@ -1651,8 +1653,10 @@ class TaskInstance(Base, LoggingMixin):
             with set_current_context(context):
                 task_orig = self.render_templates(context=context)
 
+            # TODO: add way to determine if we need to render the template,
+            # based on if orm_deserialize_value has been overriden by a custom XCom backend
             if not test_mode:
-                rtif = RenderedTaskInstanceFields(ti=self, render_templates=False)
+                rtif = RenderedTaskInstanceFields(ti=self, render_templates=True)
                 RenderedTaskInstanceFields.write(rtif)
                 RenderedTaskInstanceFields.delete_old_records(self.task_id, self.dag_id)
 
@@ -2252,7 +2256,7 @@ class TaskInstance(Base, LoggingMixin):
             # If we get here, either the task hasn't run or the RTIF record was purged.
             from airflow.utils.log.secrets_masker import redact
 
-            self.render_templates()
+            self.render_templates_orm()
             for field_name in self.task.template_fields:
                 rendered_value = getattr(self.task, field_name)
                 setattr(self.task, field_name, redact(rendered_value, field_name))
@@ -2288,6 +2292,17 @@ class TaskInstance(Base, LoggingMixin):
         original_task.render_template_fields(context)
 
         return original_task
+
+    def render_templates_orm(self) -> Operator:
+
+        @contextlib.contextmanager
+        def make_ui_renderable():
+            self._orm_deserialize_xcom = True
+            yield self
+            self._orm_deserialize_xcom = False
+
+        with make_ui_renderable():
+            return self.render_templates()
 
     def render_k8s_pod_yaml(self) -> dict | None:
         """Render the k8s pod yaml."""
@@ -2497,6 +2512,7 @@ class TaskInstance(Base, LoggingMixin):
         key: str = XCOM_RETURN_KEY,
         include_prior_dates: bool = False,
         session: Session = NEW_SESSION,
+        orm_deserialize: bool = False,
         *,
         map_indexes: int | Iterable[int] | None = None,
         default: Any = None,
@@ -2556,6 +2572,8 @@ class TaskInstance(Base, LoggingMixin):
             if first is None:  # No matching XCom at all.
                 return default
             if map_indexes is not None or first.map_index < 0:
+                if orm_deserialize or self.ui_rendered:
+                    return XCom.orm_deserialize_value(first)
                 return XCom.deserialize_value(first)
             query = query.order_by(None).order_by(XCom.map_index.asc())
             return LazyXComAccess.build_from_xcom_query(query)
