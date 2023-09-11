@@ -2293,12 +2293,15 @@ class TaskInstance(Base, LoggingMixin):
         return original_task
 
     def render_templates_orm(self) -> Operator:
+        """Render templates in the operator fields for presentation in UI."""
 
         @contextlib.contextmanager
         def make_ui_renderable():
             self._orm_deserialize_xcom = True
-            yield self
-            self._orm_deserialize_xcom = False
+            try:
+                yield self
+            finally:
+                self._orm_deserialize_xcom = False
 
         with make_ui_renderable():
             return self.render_templates()
