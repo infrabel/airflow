@@ -2576,7 +2576,7 @@ class TaskInstance(Base, LoggingMixin):
             if first is None:  # No matching XCom at all.
                 return default
             if map_indexes is not None or first.map_index < 0:
-                if orm_deserialize or self.ui_rendered:
+                if orm_deserialize or self._orm_deserialize_xcom:
                     return XCom.orm_deserialize_value(first)
                 return XCom.deserialize_value(first)
             query = query.order_by(None).order_by(XCom.map_index.asc())
