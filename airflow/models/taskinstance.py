@@ -605,6 +605,7 @@ class TaskInstance(Base, LoggingMixin):
         # correctly config the ti log
         self._log = logging.getLogger("airflow.task")
         self.test_mode = False  # can be changed when calling 'run'
+        self._orm_deserialize_xcom: bool = False
 
     @hybrid_property
     def try_number(self):
