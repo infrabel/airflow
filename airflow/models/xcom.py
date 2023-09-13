@@ -695,7 +695,8 @@ class BaseXCom(Base, LoggingMixin):
         """Deserialize XCom value from str or pickle object."""
         return BaseXCom._deserialize_value(result, False)
 
-    def orm_deserialize_value(self) -> Any:
+    @staticmethod
+    def orm_deserialize_value(result: XCom) -> Any:
         """
         Deserialize method which is used to reconstruct ORM XCom object.
 
@@ -704,7 +705,7 @@ class BaseXCom(Base, LoggingMixin):
         creating XCom orm model. This is used when viewing XCom listing
         in the webserver, for example.
         """
-        return BaseXCom._deserialize_value(self, True)
+        return BaseXCom._deserialize_value(result, True)
 
 
 class _LazyXComAccessIterator(collections.abc.Iterator):
