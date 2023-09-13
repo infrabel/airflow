@@ -741,11 +741,12 @@ class LazyXComAccess(collections.abc.Sequence):
     """
 
     _query: Query
+    _orm: bool
     _len: int | None = attr.ib(init=False, default=None)
 
     @classmethod
-    def build_from_xcom_query(cls, query: Query) -> LazyXComAccess:
-        return cls(query=query.with_entities(XCom.value))
+    def build_from_xcom_query(cls, query: Query, orm: bool = False) -> LazyXComAccess:
+        return cls(query=query.with_entities(XCom.value), orm=orm)
 
     def __repr__(self) -> str:
         return f"LazyXComAccess([{len(self)} items])"
@@ -796,6 +797,9 @@ class LazyXComAccess(collections.abc.Sequence):
                 r = query.offset(key).limit(1).one()
         except NoResultFound:
             raise IndexError(key) from None
+
+        if self._orm:
+            return XCom.orm_deserialize_value(r)
         return XCom.deserialize_value(r)
 
     @contextlib.contextmanager
