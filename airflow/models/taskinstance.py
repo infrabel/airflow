@@ -27,6 +27,7 @@ import os
 import signal
 import warnings
 from collections import defaultdict
+from copy import copy
 from datetime import timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable, Collection, Generator, Iterable, Tuple
@@ -909,6 +910,7 @@ class TaskInstance(Base, LoggingMixin):
         :param pool_override: Use the pool_override instead of task's pool
         """
         self.task = task
+        self.orm_task = copy(task)
         self.queue = task.queue
         self.pool = pool_override or task.pool
         self.pool_slots = task.pool_slots
@@ -2275,7 +2277,7 @@ class TaskInstance(Base, LoggingMixin):
             self.log.debug("Updating task params (%s) with DagRun.conf (%s)", params, dag_run.conf)
             params.update(dag_run.conf)
 
-    def render_templates(self, context: Context | None = None) -> Operator:
+    def render_templates(self, context: Context | None = None, task: Operator | None = None) -> Operator:
         """Render templates in the operator fields.
 
         If the task was originally mapped, this may replace ``self.task`` with
@@ -2284,7 +2286,7 @@ class TaskInstance(Base, LoggingMixin):
         """
         if not context:
             context = self.get_template_context()
-        original_task = self.task
+        original_task = task or self.task
 
         # If self.task is mapped, this call replaces self.task to point to the
         # unmapped BaseOperator created by this function! This is because the
@@ -2294,7 +2296,7 @@ class TaskInstance(Base, LoggingMixin):
 
         return original_task
 
-    def render_templates_orm(self) -> Operator:
+    def render_templates_orm(self, context: Context | None = None) -> Operator:
         """Render templates in the operator fields for presentation in UI."""
 
         @contextlib.contextmanager
@@ -2306,7 +2308,7 @@ class TaskInstance(Base, LoggingMixin):
                 self._orm_deserialize_xcom = False
 
         with make_ui_renderable():
-            return self.render_templates()
+            return self.render_templates(context, task=self.orm_task)
 
     def render_k8s_pod_yaml(self) -> dict | None:
         """Render the k8s pod yaml."""
