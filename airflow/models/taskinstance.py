@@ -2262,7 +2262,7 @@ class TaskInstance(Base, LoggingMixin):
 
             self.render_templates_orm()
             for field_name in self.task.template_fields:
-                rendered_value = getattr(self.task, field_name)
+                rendered_value = getattr(self.orm_task, field_name)
                 setattr(self.task, field_name, redact(rendered_value, field_name))
         except (TemplateAssertionError, UndefinedError) as e:
             raise AirflowException(
