@@ -877,6 +877,11 @@ def resolve_xcom_backend() -> type[BaseXCom]:
     return clazz
 
 
+def do_xcom_backend_override_orm_deserialize_value() -> bool:
+    """Return True if a custom XCom backend overrides the `orm_deserialize_value` methods."""
+    return BaseXCom.orm_deserialize_value != resolve_xcom_backend().orm_deserialize_value
+
+
 if TYPE_CHECKING:
     XCom = BaseXCom  # Hack to avoid Mypy "Variable 'XCom' is not valid as a type".
 else:
