@@ -2556,6 +2556,8 @@ class TaskInstance(Base, LoggingMixin):
         if dag_id is None:
             dag_id = self.dag_id
 
+        orm_deserialize_xcom: bool = orm_deserialize or self._orm_deserialize_xcom
+
         query = XCom.get_many(
             key=key,
             run_id=self.run_id,
@@ -2578,11 +2580,11 @@ class TaskInstance(Base, LoggingMixin):
             if first is None:  # No matching XCom at all.
                 return default
             if map_indexes is not None or first.map_index < 0:
-                if orm_deserialize or self._orm_deserialize_xcom:
+                if orm_deserialize_xcom:
                     return XCom.orm_deserialize_value(first)
                 return XCom.deserialize_value(first)
             query = query.order_by(None).order_by(XCom.map_index.asc())
-            return LazyXComAccess.build_from_xcom_query(query)
+            return LazyXComAccess.build_from_xcom_query(query, orm=orm_deserialize_xcom)
 
         # At this point either task_ids or map_indexes is explicitly multi-value.
         # Order return values to match task_ids and map_indexes ordering.
@@ -2608,7 +2610,7 @@ class TaskInstance(Base, LoggingMixin):
                 query = query.order_by(case(map_index_whens, value=XCom.map_index))
             else:
                 query = query.order_by(XCom.map_index)
-        return LazyXComAccess.build_from_xcom_query(query)
+        return LazyXComAccess.build_from_xcom_query(query, orm=orm_deserialize_xcom)
 
     @provide_session
     def get_num_running_task_instances(self, session: Session, same_dagrun=False) -> int:
