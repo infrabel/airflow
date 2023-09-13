@@ -92,7 +92,7 @@ from airflow.models.taskfail import TaskFail
 from airflow.models.taskinstancekey import TaskInstanceKey
 from airflow.models.taskmap import TaskMap
 from airflow.models.taskreschedule import TaskReschedule
-from airflow.models.xcom import LazyXComAccess, XCom
+from airflow.models.xcom import LazyXComAccess, XCom, do_xcom_backend_override_orm_deserialize_value
 from airflow.plugins_manager import integrate_macros_plugins
 from airflow.sentry import Sentry
 from airflow.stats import Stats
@@ -1654,10 +1654,11 @@ class TaskInstance(Base, LoggingMixin):
             with set_current_context(context):
                 task_orig = self.render_templates(context=context)
 
-            # TODO: add way to determine if we need to render the template,
-            # based on if orm_deserialize_value has been overriden by a custom XCom backend
             if not test_mode:
-                rtif = RenderedTaskInstanceFields(ti=self, render_templates=True)
+                rtif = RenderedTaskInstanceFields(
+                    ti=self,
+                    render_templates=do_xcom_backend_override_orm_deserialize_value()
+                )
                 RenderedTaskInstanceFields.write(rtif)
                 RenderedTaskInstanceFields.delete_old_records(self.task_id, self.dag_id)
 
