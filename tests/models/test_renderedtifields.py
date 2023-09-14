@@ -222,6 +222,7 @@ class TestRenderedTaskInstanceFields:
                 session.refresh(dr)
                 for ti in dr.task_instances:
                     ti.task = dag.get_task(ti.task_id)
+                    ti.orm_task = ti.task
                     session.add(RTIF(ti))
             session.flush()
 
