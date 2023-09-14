@@ -569,6 +569,7 @@ class TaskInstance(Base, LoggingMixin):
         # can be changed when calling 'run'
         self.test_mode = False
 
+        self.orm_task: Operator | None = copy(task)
         self._orm_deserialize_xcom: bool = False
 
     @property
@@ -606,7 +607,8 @@ class TaskInstance(Base, LoggingMixin):
         # correctly config the ti log
         self._log = logging.getLogger("airflow.task")
         self.test_mode = False  # can be changed when calling 'run'
-        self._orm_deserialize_xcom: bool = False
+        self.orm_task = None
+        self._orm_deserialize_xcom = False
 
     @hybrid_property
     def try_number(self):
@@ -875,6 +877,7 @@ class TaskInstance(Base, LoggingMixin):
             ti = qry.one_or_none()
         if ti:
             # Fields ordered per model definition
+            self.orm_task = copy(ti.task)
             self.start_date = ti.start_date
             self.end_date = ti.end_date
             self.duration = ti.duration
