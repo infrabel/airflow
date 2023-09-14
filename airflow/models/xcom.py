@@ -695,7 +695,8 @@ class BaseXCom(Base, LoggingMixin):
         """Deserialize XCom value from str or pickle object."""
         return BaseXCom._deserialize_value(result, False)
 
-    def orm_deserialize_value(self) -> Any:
+    @staticmethod
+    def orm_deserialize_value(result: XCom) -> Any:
         """
         Deserialize method which is used to reconstruct ORM XCom object.
 
@@ -704,7 +705,7 @@ class BaseXCom(Base, LoggingMixin):
         creating XCom orm model. This is used when viewing XCom listing
         in the webserver, for example.
         """
-        return BaseXCom._deserialize_value(self, True)
+        return BaseXCom._deserialize_value(result, True)
 
 
 class _LazyXComAccessIterator(collections.abc.Iterator):
@@ -740,11 +741,12 @@ class LazyXComAccess(collections.abc.Sequence):
     """
 
     _query: Query
+    _orm: bool
     _len: int | None = attr.ib(init=False, default=None)
 
     @classmethod
-    def build_from_xcom_query(cls, query: Query) -> LazyXComAccess:
-        return cls(query=query.with_entities(XCom.value))
+    def build_from_xcom_query(cls, query: Query, orm: bool = False) -> LazyXComAccess:
+        return cls(query=query.with_entities(XCom.value), orm=orm)
 
     def __repr__(self) -> str:
         return f"LazyXComAccess([{len(self)} items])"
@@ -795,6 +797,9 @@ class LazyXComAccess(collections.abc.Sequence):
                 r = query.offset(key).limit(1).one()
         except NoResultFound:
             raise IndexError(key) from None
+
+        if self._orm:
+            return XCom.orm_deserialize_value(r)
         return XCom.deserialize_value(r)
 
     @contextlib.contextmanager
@@ -870,6 +875,11 @@ def resolve_xcom_backend() -> type[BaseXCom]:
     if set(base_xcom_params) != set(xcom_params):
         _patch_outdated_serializer(clazz=clazz, params=xcom_params)
     return clazz
+
+
+def do_xcom_backend_override_orm_deserialize_value() -> bool:
+    """Return True if a custom XCom backend overrides the `orm_deserialize_value` methods."""
+    return BaseXCom.orm_deserialize_value != resolve_xcom_backend().orm_deserialize_value
 
 
 if TYPE_CHECKING:

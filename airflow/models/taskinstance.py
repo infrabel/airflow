@@ -27,6 +27,7 @@ import os
 import signal
 import warnings
 from collections import defaultdict
+from copy import copy
 from datetime import timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Callable, Collection, Generator, Iterable, Tuple
@@ -92,7 +93,7 @@ from airflow.models.taskfail import TaskFail
 from airflow.models.taskinstancekey import TaskInstanceKey
 from airflow.models.taskmap import TaskMap
 from airflow.models.taskreschedule import TaskReschedule
-from airflow.models.xcom import LazyXComAccess, XCom
+from airflow.models.xcom import LazyXComAccess, XCom, do_xcom_backend_override_orm_deserialize_value
 from airflow.plugins_manager import integrate_macros_plugins
 from airflow.sentry import Sentry
 from airflow.stats import Stats
@@ -568,6 +569,9 @@ class TaskInstance(Base, LoggingMixin):
         # can be changed when calling 'run'
         self.test_mode = False
 
+        self.orm_task: Operator | None = copy(task)
+        self._orm_deserialize_xcom: bool = False
+
     @property
     def stats_tags(self) -> dict[str, str]:
         return prune_dict({"dag_id": self.dag_id, "task_id": self.task_id})
@@ -603,6 +607,8 @@ class TaskInstance(Base, LoggingMixin):
         # correctly config the ti log
         self._log = logging.getLogger("airflow.task")
         self.test_mode = False  # can be changed when calling 'run'
+        self.orm_task = None
+        self._orm_deserialize_xcom = False
 
     @hybrid_property
     def try_number(self):
@@ -895,6 +901,7 @@ class TaskInstance(Base, LoggingMixin):
             self.trigger_id = ti.trigger_id
             self.next_method = ti.next_method
             self.next_kwargs = ti.next_kwargs
+            self.orm_task = copy(ti.task)
         else:
             self.state = None
 
@@ -906,6 +913,7 @@ class TaskInstance(Base, LoggingMixin):
         :param pool_override: Use the pool_override instead of task's pool
         """
         self.task = task
+        self.orm_task = copy(task)
         self.queue = task.queue
         self.pool = pool_override or task.pool
         self.pool_slots = task.pool_slots
@@ -1652,7 +1660,10 @@ class TaskInstance(Base, LoggingMixin):
                 task_orig = self.render_templates(context=context)
 
             if not test_mode:
-                rtif = RenderedTaskInstanceFields(ti=self, render_templates=False)
+                rtif = RenderedTaskInstanceFields(
+                    ti=self,
+                    render_templates=do_xcom_backend_override_orm_deserialize_value()
+                )
                 RenderedTaskInstanceFields.write(rtif)
                 RenderedTaskInstanceFields.delete_old_records(self.task_id, self.dag_id)
 
@@ -2252,9 +2263,9 @@ class TaskInstance(Base, LoggingMixin):
             # If we get here, either the task hasn't run or the RTIF record was purged.
             from airflow.utils.log.secrets_masker import redact
 
-            self.render_templates()
+            self.render_templates_orm()
             for field_name in self.task.template_fields:
-                rendered_value = getattr(self.task, field_name)
+                rendered_value = getattr(self.orm_task, field_name)
                 setattr(self.task, field_name, redact(rendered_value, field_name))
         except (TemplateAssertionError, UndefinedError) as e:
             raise AirflowException(
@@ -2270,7 +2281,7 @@ class TaskInstance(Base, LoggingMixin):
             self.log.debug("Updating task params (%s) with DagRun.conf (%s)", params, dag_run.conf)
             params.update(dag_run.conf)
 
-    def render_templates(self, context: Context | None = None) -> Operator:
+    def render_templates(self, context: Context | None = None, task: Operator | None = None) -> Operator:
         """Render templates in the operator fields.
 
         If the task was originally mapped, this may replace ``self.task`` with
@@ -2279,15 +2290,29 @@ class TaskInstance(Base, LoggingMixin):
         """
         if not context:
             context = self.get_template_context()
-        original_task = self.task
+        original_task = task or self.task
 
-        # If self.task is mapped, this call replaces self.task to point to the
+        # If original_task is mapped, this call replaces self.task to point to the
         # unmapped BaseOperator created by this function! This is because the
         # MappedOperator is useless for template rendering, and we need to be
         # able to access the unmapped task instead.
         original_task.render_template_fields(context)
 
         return original_task
+
+    def render_templates_orm(self, context: Context | None = None) -> Operator:
+        """Render templates in the operator fields for presentation in UI."""
+
+        @contextlib.contextmanager
+        def make_ui_renderable():
+            self._orm_deserialize_xcom = True
+            try:
+                yield self
+            finally:
+                self._orm_deserialize_xcom = False
+
+        with make_ui_renderable():
+            return self.render_templates(context, task=self.orm_task)
 
     def render_k8s_pod_yaml(self) -> dict | None:
         """Render the k8s pod yaml."""
@@ -2497,6 +2522,7 @@ class TaskInstance(Base, LoggingMixin):
         key: str = XCOM_RETURN_KEY,
         include_prior_dates: bool = False,
         session: Session = NEW_SESSION,
+        orm_deserialize: bool = False,
         *,
         map_indexes: int | Iterable[int] | None = None,
         default: Any = None,
@@ -2534,6 +2560,8 @@ class TaskInstance(Base, LoggingMixin):
         if dag_id is None:
             dag_id = self.dag_id
 
+        orm_deserialize_xcom: bool = orm_deserialize or self._orm_deserialize_xcom
+
         query = XCom.get_many(
             key=key,
             run_id=self.run_id,
@@ -2556,9 +2584,11 @@ class TaskInstance(Base, LoggingMixin):
             if first is None:  # No matching XCom at all.
                 return default
             if map_indexes is not None or first.map_index < 0:
+                if orm_deserialize_xcom:
+                    return XCom.orm_deserialize_value(first)
                 return XCom.deserialize_value(first)
             query = query.order_by(None).order_by(XCom.map_index.asc())
-            return LazyXComAccess.build_from_xcom_query(query)
+            return LazyXComAccess.build_from_xcom_query(query, orm=orm_deserialize_xcom)
 
         # At this point either task_ids or map_indexes is explicitly multi-value.
         # Order return values to match task_ids and map_indexes ordering.
@@ -2584,7 +2614,7 @@ class TaskInstance(Base, LoggingMixin):
                 query = query.order_by(case(map_index_whens, value=XCom.map_index))
             else:
                 query = query.order_by(XCom.map_index)
-        return LazyXComAccess.build_from_xcom_query(query)
+        return LazyXComAccess.build_from_xcom_query(query, orm=orm_deserialize_xcom)
 
     @provide_session
     def get_num_running_task_instances(self, session: Session, same_dagrun=False) -> int:
