@@ -877,7 +877,6 @@ class TaskInstance(Base, LoggingMixin):
             ti = qry.one_or_none()
         if ti:
             # Fields ordered per model definition
-            self.orm_task = copy(ti.task)
             self.start_date = ti.start_date
             self.end_date = ti.end_date
             self.duration = ti.duration
@@ -902,6 +901,7 @@ class TaskInstance(Base, LoggingMixin):
             self.trigger_id = ti.trigger_id
             self.next_method = ti.next_method
             self.next_kwargs = ti.next_kwargs
+            self.orm_task = copy(ti.task)
         else:
             self.state = None
 
@@ -2292,7 +2292,7 @@ class TaskInstance(Base, LoggingMixin):
             context = self.get_template_context()
         original_task = task or self.task
 
-        # If self.task is mapped, this call replaces self.task to point to the
+        # If original_task is mapped, this call replaces self.task to point to the
         # unmapped BaseOperator created by this function! This is because the
         # MappedOperator is useless for template rendering, and we need to be
         # able to access the unmapped task instead.
