@@ -143,7 +143,7 @@ apache-airflow-providers-microsoft-winrm==3.3.0
 apache-airflow-providers-mongo==3.4.0
 apache-airflow-providers-mysql==5.4.0
 apache-airflow-providers-neo4j==3.4.0
-apache-airflow-providers-odbc==4.1.0
+apache-airflow-providers-odbc==4.2.0rc1
 apache-airflow-providers-openfaas==3.3.0
 apache-airflow-providers-openlineage==1.2.0
 apache-airflow-providers-opensearch==1.0.0
