@@ -26,7 +26,6 @@ import tenacity
 from aiohttp import ClientResponseError
 from asgiref.sync import sync_to_async
 from requests.auth import HTTPBasicAuth
-from requests.models import DEFAULT_REDIRECT_LIMIT
 from requests_toolbelt.adapters.socket_options import TCPKeepAliveAdapter
 
 from airflow.exceptions import AirflowException
@@ -114,15 +113,8 @@ class HttpHook(BaseHook):
             elif self._auth_type:
                 session.auth = self.auth_type()
             if conn.extra:
-                extra_options = conn.extra_dejson
-                session.proxies = extra_options.pop("proxies", {})
-                session.stream = extra_options.pop("stream", False)
-                session.verify = extra_options.pop("verify", True)
-                session.cert = extra_options.pop("cert", None)
-                session.max_redirects = extra_options.pop("max_redirects", DEFAULT_REDIRECT_LIMIT)
-
                 try:
-                    session.headers.update(extra_options)
+                    session.headers.update(conn.extra_dejson)
                 except TypeError:
                     self.log.warning("Connection to %s has invalid extra field.", conn.host)
         if headers:
