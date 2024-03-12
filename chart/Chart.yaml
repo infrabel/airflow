@@ -1,0 +1,102 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+# apiVersion v2 is Helm 3
+---
+apiVersion: v2
+name: airflow
+version: 1.14.0-dev
+appVersion: 2.8.3
+description: The official Helm chart to deploy Apache Airflow, a platform to
+  programmatically author, schedule, and monitor workflows
+home: https://airflow.apache.org/
+sources:
+  - https://github.com/apache/airflow
+icon: https://airflow.apache.org/images/airflow_dark_bg.png
+keywords:
+  - apache
+  - airflow
+  - workflow
+  - scheduler
+dependencies:
+  - name: postgresql
+    version: 13.2.24
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+maintainers:
+  - email: dev@airflow.apache.org
+    name: Apache Airflow PMC
+type: application
+annotations:
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://airflow.apache.org/docs/helm-chart/1.14.0/
+  artifacthub.io/screenshots: |
+    - title: DAGs View
+      url: https://airflow.apache.org/docs/apache-airflow/2.8.3/_images/dags.png
+    - title: Datasets View
+      url: https://airflow.apache.org/docs/apache-airflow/2.8.3/_images/datasets.png
+    - title: Grid View
+      url: https://airflow.apache.org/docs/apache-airflow/2.8.3/_images/grid.png
+    - title: Graph View
+      url: https://airflow.apache.org/docs/apache-airflow/2.8.3/_images/graph.png
+    - title: Calendar View
+      url: https://airflow.apache.org/docs/apache-airflow/2.8.3/_images/calendar.png
+    - title: Variable View
+      url: https://airflow.apache.org/docs/apache-airflow/2.8.3/_images/variable_hidden.png
+    - title: Gantt Chart
+      url: https://airflow.apache.org/docs/apache-airflow/2.8.3/_images/gantt.png
+    - title: Task Duration
+      url: https://airflow.apache.org/docs/apache-airflow/2.8.3/_images/duration.png
+    - title: Code View
+      url: https://airflow.apache.org/docs/apache-airflow/2.8.3/_images/code.png
+  artifacthub.io/changes: |
+    - description: Support labels specific to the database migration objects and pods
+      kind: added
+      links:
+      - name: '#37490'
+        url: https://github.com/apache/airflow/pull/37490
+
+    - description: Flower K8s Probe config
+      kind: changed
+      links:
+      - name: '#37528'
+        url: https://github.com/apache/airflow/pull/37528
+
+    - description: Remove duplicate ports key in webserver service
+      kind: fixed
+      links:
+      - name: '#37356'
+        url: https://github.com/apache/airflow/pull/37356
+
+    - description: Add ``AIRFLOW_HOME`` env var to log groomer sidecar
+      kind: fixed
+      links:
+      - name: '#37588'
+        url: https://github.com/apache/airflow/pull/37588
+
+    - description: Skip ``.`` path when preparing reproducible packages
+      kind: fixed
+      links:
+      - name: '#37402'
+        url: https://github.com/apache/airflow/pull/37402
+
+    - description: 'Misc: Default airflow version to 2.8.2'
+      kind: changed
+      links:
+      - name: '#37704'
+        url: https://github.com/apache/airflow/pull/37704
