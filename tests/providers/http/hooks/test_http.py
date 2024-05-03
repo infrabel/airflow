@@ -771,7 +771,7 @@ class TestHttpAsyncHook:
                 assert mocked_function.call_args.kwargs.get("allow_redirects") is False
                 assert mocked_function.call_args.kwargs.get("max_redirects") == 3
                 assert mocked_function.call_args.kwargs.get("trust_env") is False
-                
+
     def test_process_extra_options_from_connection(self):
         extra_options = {}
         proxy = {"http": "http://proxy:80", "https": "https://proxy:80"}
