@@ -138,7 +138,7 @@ apache-airflow-providers-imap==3.5.0
 apache-airflow-providers-influxdb==2.4.1
 apache-airflow-providers-jdbc==4.2.2
 apache-airflow-providers-jenkins==3.5.1
-apache-airflow-providers-microsoft-azure==10.0.0
+apache-airflow-providers-microsoft-azure==10.1.1
 apache-airflow-providers-microsoft-mssql==3.6.1
 apache-airflow-providers-microsoft-psrp==2.6.1
 apache-airflow-providers-microsoft-winrm==3.4.0
