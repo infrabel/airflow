@@ -97,6 +97,7 @@ analytics-python==1.2.9
 annotated-types==0.7.0
 ansicolors==1.1.8
 anyio==4.8.0
+apache-airflow-providers-edge @ git+https://github.com/infrabel/airflow.git@fd50d0eb907111e4fe60bda62bddd605c46027fb#subdirectory=providers/edge
 apache-airflow-task-sdk @ https://dist.apache.org/repos/dist/dev/airflow/3.0.0b2/apache_airflow_task_sdk-1.0.0b2.tar.gz
 apache-airflow-providers-airbyte==5.0.0
 apache-airflow-providers-alibaba==3.0.0
