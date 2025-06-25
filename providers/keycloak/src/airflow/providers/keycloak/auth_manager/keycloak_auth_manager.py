@@ -127,13 +127,15 @@ class KeycloakAuthManager(BaseAuthManager[KeycloakAuthManagerUser]):
     ) -> bool:
         dag_id = details.id if details else None
         access_entity_str = access_entity.value if access_entity else None
-        return self._is_authorized(
+        result = self._is_authorized(
             method=method,
             resource_type=KeycloakResource.DAG,
             user=user,
             resource_id=dag_id,
             attributes={"dag_entity": access_entity_str},
         )
+        print("is_authorized_dag", dag_id, access_entity_str, method, KeycloakResource.DAG, user, {"dag_entity": access_entity_str}, result)
+        return result
 
     def is_authorized_backfill(
         self, *, method: ResourceMethod, user: KeycloakAuthManagerUser, details: BackfillDetails | None = None
