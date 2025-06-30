@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, cast, Sequence
 from urllib.parse import urljoin
 
 import requests
@@ -27,6 +27,7 @@ from keycloak import KeycloakOpenID
 
 from airflow.api_fastapi.app import AUTH_MANAGER_FASTAPI_APP_PREFIX
 from airflow.api_fastapi.auth.managers.base_auth_manager import BaseAuthManager
+from airflow.api_fastapi.auth.managers.models.batch_apis import IsAuthorizedDagRequest
 from airflow.api_fastapi.common.types import MenuItem
 from airflow.cli.cli_config import CLICommand, GroupCommand
 from airflow.configuration import conf
@@ -136,6 +137,46 @@ class KeycloakAuthManager(BaseAuthManager[KeycloakAuthManagerUser]):
         )
         print("is_authorized_dag", dag_id, access_entity_str, method, KeycloakResource.DAG, user, {"dag_entity": access_entity_str}, result)
         return result
+
+    def batch_is_authorized_dag(
+        self,
+        requests: Sequence[IsAuthorizedDagRequest],
+        *,
+        user: KeycloakAuthManagerUser,
+    ) -> bool:
+        """
+        Perform batch DAG authorization using Keycloak's batch API.
+        Returns True only if ALL requests are authorized.
+        """
+
+        self.log.info("Keycloak batch_is_authorized_dag for %s with following requests: %s", user, requests)
+
+        def build_permission(request: IsAuthorizedDagRequest):
+            dag_id = request["details"].id if request.get("details") else None
+            method = request["method"]
+            if dag_id is None:
+                return None
+            return (method, dag_id)
+
+        permissions_with_none = list(map(build_permission, requests))
+
+        # If any request has no dag_id, it cannot be authorized
+        if None in permissions_with_none:
+            return False
+
+        valid_permissions = [permission for permission in permissions_with_none if permission is not None]
+
+        self.log.info("valid_permissions: %s", valid_permissions)
+
+        authorized_set = self._is_batch_authorized(
+            permissions=valid_permissions,
+            user=user,
+        )
+
+        self.log.info("authorized_set: %s", authorized_set)
+
+        # Return True only if all permissions are in the authorized set
+        return all(perm in authorized_set for perm in valid_permissions)
 
     def is_authorized_backfill(
         self, *, method: ResourceMethod, user: KeycloakAuthManagerUser, details: BackfillDetails | None = None
