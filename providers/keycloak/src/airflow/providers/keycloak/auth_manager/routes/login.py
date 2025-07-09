@@ -38,6 +38,7 @@ def login(request: Request) -> RedirectResponse:
     """Initiate the authentication."""
     client = KeycloakAuthManager.get_keycloak_client()
     redirect_uri = request.url_for("login_callback")
+    print("login", redirect_uri)
     auth_url = client.auth_url(redirect_uri=str(redirect_uri), scope="openid")
     return RedirectResponse(auth_url)
 
@@ -51,6 +52,7 @@ def login_callback(request: Request):
 
     client = KeycloakAuthManager.get_keycloak_client()
     redirect_uri = request.url_for("login_callback")
+    print("login_callback", redirect_uri)
 
     tokens = client.token(
         grant_type="authorization_code",
