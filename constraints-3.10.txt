@@ -510,7 +510,7 @@ pandas-stubs==2.3.0.250703
 pandas==2.1.4
 pandocfilters==1.5.1
 papermill==2.6.0
-paramiko==4.0.0
+paramiko==3.5.1
 parso==0.8.4
 pathspec==0.12.1
 pbr==6.1.1
