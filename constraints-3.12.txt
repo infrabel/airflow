@@ -1,7 +1,7 @@
 
 #
-# This constraints file was automatically generated on 2025-09-09T13:57:31.293977
-# via `uv pip install --resolution highest` for the "main" branch of Airflow.
+# This constraints file was automatically generated on 2025-09-09T19:16:07.603810
+# via `uv pip install --resolution highest` for the "v3-1-test" branch of Airflow.
 # This variant of constraints install uses the HEAD of the branch version for 'apache-airflow' but installs
 # the providers from PIP-released packages at the moment of the constraint generation.
 #
@@ -60,7 +60,7 @@ Pygments==2.19.2
 SQLAlchemy-JSONField==1.0.2
 SQLAlchemy-Utils==0.42.0
 SQLAlchemy==1.4.54
-SecretStorage==3.3.3
+SecretStorage==3.4.0
 WTForms==3.2.1
 Werkzeug==2.2.3
 a2wsgi==1.10.10
@@ -330,7 +330,7 @@ google-cloud-automl==2.16.4
 google-cloud-batch==0.17.36
 google-cloud-bigquery-datatransfer==3.19.2
 google-cloud-bigquery-storage==2.33.0
-google-cloud-bigquery==3.36.0
+google-cloud-bigquery==3.37.0
 google-cloud-bigtable==2.32.0
 google-cloud-build==3.32.0
 google-cloud-compute==1.37.0
@@ -436,7 +436,7 @@ lazy-object-proxy==1.12.0
 libcst==1.8.2
 limits==5.5.0
 linkify-it-py==2.0.3
-litellm==1.76.3
+litellm==1.77.0
 lockfile==0.12.2
 looker-sdk==25.10.0
 lxml==6.0.1
@@ -619,7 +619,7 @@ smmap==5.0.2
 sniffio==1.3.1
 snowflake-connector-python==3.17.3
 snowflake-snowpark-python==1.38.0
-snowflake-sqlalchemy==1.7.6
+snowflake-sqlalchemy==1.7.7
 sortedcontainers==2.4.0
 soupsieve==2.8
 spython==0.3.14
