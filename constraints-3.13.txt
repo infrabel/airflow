@@ -142,7 +142,7 @@ apache-airflow-providers-imap==3.11.0
 apache-airflow-providers-influxdb==2.10.2
 apache-airflow-providers-jdbc==5.4.1
 apache-airflow-providers-jenkins==4.2.3
-apache-airflow-providers-keycloak==0.6.0
+apache-airflow-providers-keycloak==0.7.1
 apache-airflow-providers-microsoft-azure==13.0.1
 apache-airflow-providers-microsoft-mssql==4.5.0
 apache-airflow-providers-microsoft-psrp==3.2.3
